@@ -1882,8 +1882,8 @@
       "__id__": 25
     },
     "duration": 1.6,
-    "segments": 64,
-    "meshRows": 24,
+    "segments": 96,
+    "meshRows": 96,
     "perspectiveStrength": 0.18,
     "perspectiveCenterX": 0.5,
     "perspectiveCenterY": 0.5,

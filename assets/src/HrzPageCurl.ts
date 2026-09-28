@@ -1284,8 +1284,11 @@ export default class HrzPageCurl extends cc.Component {
         const offset: number = this._resolvePeelOffset(a, fold, pageWidth, pageHeight);
         const radius: number = this._currentRadius;
         const splitB: number = this._resolveSplitB(bendAngle, maxB, radius);
+        const seamOverlap: number = side > 0 && splitB > 0 ? Math.min(6, splitB * 0.06) : 0;
         // 越界顶点夹到分界线上：两层各自只覆盖自己那半边，塌陷区的三角形面积为零，不会画出来。
-        const b: number = side < 0 ? Math.min(linearB - offset, splitB) : Math.max(linearB - offset, splitB);
+        const b: number = side < 0
+            ? Math.min(linearB - offset, splitB)
+            : Math.max(linearB - offset, splitB - seamOverlap);
 
         if (b <= 0 || bendAngle <= 0) {
             // 平直区域的位置必须由 (a, b) **加上折痕外移**反算：
