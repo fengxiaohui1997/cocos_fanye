@@ -65,8 +65,12 @@ export default class HrzPageCurl extends cc.Component {
     @property({ tooltip: '翻页时长（秒）' })
     public duration: number = 1.6;
 
+    @property({ tooltip: '勾选后从左页向右翻' })
+    public turnRight: boolean = false;
+
     private _front: PageRecord | null = null;
     private _back: PageRecord | null = null;
+    private _turningRight: boolean = false;
     private _preparing: boolean = false;
     private _playing: boolean = false;
     private _elapsed: number = 0;
@@ -104,6 +108,7 @@ export default class HrzPageCurl extends cc.Component {
             return;
         }
 
+        this._turningRight = this.turnRight;
         this._front = this._front || this._record(this.frontNode);
         this._back = this._back || this._record(this.backNode);
         this._preparing = true;
@@ -296,8 +301,9 @@ export default class HrzPageCurl extends cc.Component {
             const pixelV: number = rect.y + sourceY / height * rect.height;
             for (let col: number = 0; col <= COLUMNS; col++) {
                 const sourceX: number = width * col / COLUMNS;
-                const a: number = (sourceX - fold.x) * fold.tx + (sourceY - fold.y) * fold.ty;
-                const linearB: number = (sourceX - fold.x) * fold.nx + (sourceY - fold.y) * fold.ny;
+                const geometryX: number = this._turningRight ? width - sourceX : sourceX;
+                const a: number = (geometryX - fold.x) * fold.tx + (sourceY - fold.y) * fold.ty;
+                const linearB: number = (geometryX - fold.x) * fold.nx + (sourceY - fold.y) * fold.ny;
                 const b: number = back ? Math.max(linearB, splitB - overlap) : Math.min(linearB, splitB);
                 let alongN: number = b;
                 let depth: number = 0;
@@ -321,7 +327,7 @@ export default class HrzPageCurl extends cc.Component {
                 const projectedY: number = height / 2 + (y - height / 2) * scale;
                 const pixelU: number = rect.x + (back ? 1 - sourceX / width : sourceX / width) * rect.width;
 
-                vertices.x[index] = projectedX * rect.width / width;
+                vertices.x[index] = (this._turningRight ? width - projectedX : projectedX) * rect.width / width;
                 vertices.y[index] = rect.height - projectedY * rect.height / height;
                 vertices.u[index] = pixelU;
                 vertices.v[index] = pixelV;
