@@ -1319,6 +1319,12 @@
       "__id__": 16
     },
     "_enabled": true,
+    "frontNode": {
+      "__id__": 17
+    },
+    "backNode": {
+      "__id__": 22
+    },
     "duration": 1.6,
     "_id": "27DHTFevpG+YAheuu0WvOL"
   },

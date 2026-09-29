@@ -51,6 +51,20 @@ export namespace HrzNodeUtils {
         }
     }
 
+    export function captureNodeToSpriteFrameImmediate(targetNode: cc.Node, textureScale?: number): cc.SpriteFrame | null {
+        const captureNode: cc.Node = new cc.Node('hrz_node_screenshot_capture');
+        captureNode.parent = cc.director.getScene();
+        const capture: HrzNodeScreenshotCapture = captureNode.addComponent(HrzNodeScreenshotCapture);
+        const wasActive: boolean = targetNode.active;
+        try {
+            targetNode.active = true;
+            return capture.captureNodeToSpriteFrameNow(targetNode, textureScale);
+        } finally {
+            targetNode.active = wasActive;
+            captureNode.destroy();
+        }
+    }
+
     /**
      * 释放 captureNodeToSpriteFrame 返回的 SpriteFrame 和内部 RenderTexture。
      * @param spriteFrame 需要释放的截图 SpriteFrame

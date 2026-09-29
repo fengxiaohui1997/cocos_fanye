@@ -56,6 +56,12 @@ type RenderFlow = { FLAG_UPDATE_RENDER_DATA: number };
 
 @ccclass
 export default class HrzPageCurl extends cc.Component {
+    @property(cc.Node)
+    public frontNode: cc.Node = null;
+
+    @property(cc.Node)
+    public backNode: cc.Node = null;
+
     @property({ tooltip: '翻页时长（秒）' })
     public duration: number = 1.6;
 
@@ -93,22 +99,20 @@ export default class HrzPageCurl extends cc.Component {
             return;
         }
 
-        const frontNode: cc.Node = this.node.getChildByName('fanYe1');
-        const backNode: cc.Node = this.node.getChildByName('fanYe2');
-        if (!frontNode || !backNode) {
-            console.warn('[HrzPageCurl] 缺少 fanYe1 或 fanYe2');
+        if (!this.frontNode || !this.backNode) {
+            console.warn('[HrzPageCurl] 请在编辑器中绑定正面和背面节点');
             return;
         }
 
-        this._front = this._front || this._record(frontNode);
-        this._back = this._back || this._record(backNode);
+        this._front = this._front || this._record(this.frontNode);
+        this._back = this._back || this._record(this.backNode);
         this._preparing = true;
         this._front.node.active = true;
-        this._back.node.active = true;
+        this._back.node.active = false;
         this._back.node.zIndex = this._front.originalZIndex - 1;
 
         try {
-            await this._capture(this._back);
+            await this._capture(this._back, true);
             await this._capture(this._front);
             if (!cc.isValid(this)) {
                 return;
@@ -119,6 +123,7 @@ export default class HrzPageCurl extends cc.Component {
             this._back.node.zIndex = this._front.node.zIndex + 1;
             this._elapsed = 0;
             this._refresh(0);
+            this._back.node.active = true;
             this._preparing = false;
             this._playing = true;
         } catch (error) {
@@ -171,7 +176,7 @@ export default class HrzPageCurl extends cc.Component {
         };
     }
 
-    private async _capture(record: PageRecord): Promise<void> {
+    private async _capture(record: PageRecord, immediate: boolean = false): Promise<void> {
         if (record.sprite) {
             record.sprite.spriteFrame = record.originalFrame;
             record.sprite.type = SIMPLE_TYPE;
@@ -182,7 +187,9 @@ export default class HrzPageCurl extends cc.Component {
         }
         this._releaseFrames(record);
 
-        record.capturedFrame = await HrzNodeUtils.captureNodeToSpriteFrame(record.node, CAPTURE_SCALE);
+        record.capturedFrame = immediate
+            ? HrzNodeUtils.captureNodeToSpriteFrameImmediate(record.node, CAPTURE_SCALE)
+            : await HrzNodeUtils.captureNodeToSpriteFrame(record.node, CAPTURE_SCALE);
         if (!record.capturedFrame) {
             throw new Error(record.node.name + ' 截图失败');
         }
