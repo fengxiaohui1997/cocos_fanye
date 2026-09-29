@@ -26,18 +26,18 @@ interface MeshVertices {
 
 interface PageRecord {
     node: cc.Node;
-    sprite: cc.Sprite;
+    sprite: cc.Sprite | null;
     addedSprite: boolean;
-    originalFrame: cc.SpriteFrame;
+    originalFrame: cc.SpriteFrame | null;
     originalType: cc.Sprite.Type;
     originalSizeMode: cc.Sprite.SizeMode;
     originalActive: boolean;
     originalZIndex: number;
     originalSize: cc.Size;
     childStates: Array<{ node: cc.Node; active: boolean }>;
-    capturedFrame: cc.SpriteFrame;
-    meshFrame: cc.SpriteFrame;
-    vertices: MeshVertices;
+    capturedFrame: cc.SpriteFrame | null;
+    meshFrame: cc.SpriteFrame | null;
+    vertices: MeshVertices | null;
 }
 
 interface Fold {
@@ -57,16 +57,16 @@ type RenderFlow = { FLAG_UPDATE_RENDER_DATA: number };
 @ccclass
 export default class HrzPageCurl extends cc.Component {
     @property(cc.Node)
-    public frontNode: cc.Node = null;
+    public frontNode: cc.Node | null = null;
 
     @property(cc.Node)
-    public backNode: cc.Node = null;
+    public backNode: cc.Node | null = null;
 
     @property({ tooltip: '翻页时长（秒）' })
     public duration: number = 1.6;
 
-    private _front: PageRecord = null;
-    private _back: PageRecord = null;
+    private _front: PageRecord | null = null;
+    private _back: PageRecord | null = null;
     private _preparing: boolean = false;
     private _playing: boolean = false;
     private _elapsed: number = 0;
@@ -178,7 +178,7 @@ export default class HrzPageCurl extends cc.Component {
 
     private async _capture(record: PageRecord, immediate: boolean = false): Promise<void> {
         if (record.sprite) {
-            record.sprite.spriteFrame = record.originalFrame;
+            record.sprite.spriteFrame = record.originalFrame!;
             record.sprite.type = SIMPLE_TYPE;
             record.sprite.sizeMode = cc.Sprite.SizeMode.CUSTOM;
         }
@@ -187,16 +187,17 @@ export default class HrzPageCurl extends cc.Component {
         }
         this._releaseFrames(record);
 
-        record.capturedFrame = immediate
+        const capturedFrame: cc.SpriteFrame | null = immediate
             ? HrzNodeUtils.captureNodeToSpriteFrameImmediate(record.node, CAPTURE_SCALE)
             : await HrzNodeUtils.captureNodeToSpriteFrame(record.node, CAPTURE_SCALE);
-        if (!record.capturedFrame) {
+        if (!capturedFrame) {
             throw new Error(record.node.name + ' 截图失败');
         }
+        record.capturedFrame = capturedFrame;
     }
 
     private _attachMesh(record: PageRecord): void {
-        const captured: cc.SpriteFrame = record.capturedFrame;
+        const captured: cc.SpriteFrame = record.capturedFrame!;
         const rect: cc.Rect = captured.getRect();
         const mesh: cc.SpriteFrame = new cc.SpriteFrame();
         mesh.setTexture(
@@ -226,6 +227,9 @@ export default class HrzPageCurl extends cc.Component {
     }
 
     private _refresh(progress: number): void {
+        if (!this._front || !this._back) {
+            return;
+        }
         const width: number = this._front.node.width;
         const height: number = this._front.node.height;
         const radius: number = CURL_RADIUS * (1 - this._landing(progress));
@@ -240,8 +244,8 @@ export default class HrzPageCurl extends cc.Component {
 
         this._writeLayer(this._front, false, width, height, radius, fold, bendAngle, maxB);
         this._writeLayer(this._back, true, width, height, radius, fold, bendAngle, maxB);
-        this._markDirty(this._front.sprite);
-        this._markDirty(this._back.sprite);
+        this._markDirty(this._front.sprite!);
+        this._markDirty(this._back.sprite!);
     }
 
     private _landing(progress: number): number {
@@ -279,9 +283,9 @@ export default class HrzPageCurl extends cc.Component {
         bendAngle: number,
         maxB: number,
     ): void {
-        const vertices: MeshVertices = record.vertices;
-        const rect: cc.Rect = record.meshFrame.getRect();
-        const texture: cc.Texture2D = record.meshFrame.getTexture();
+        const vertices: MeshVertices = record.vertices!;
+        const rect: cc.Rect = record.meshFrame!.getRect();
+        const texture: cc.Texture2D = record.meshFrame!.getTexture();
         const splitB: number = bendAngle <= Math.PI / 2 ? maxB : Math.min(maxB, radius * Math.PI / 2);
         const overlap: number = back && splitB > 0 ? Math.min(SEAM_OVERLAP, splitB * 0.06) : 0;
         const focal: number = width / PERSPECTIVE_STRENGTH;
@@ -368,7 +372,7 @@ export default class HrzPageCurl extends cc.Component {
         }
     }
 
-    private _restore(record: PageRecord): void {
+    private _restore(record: PageRecord | null): void {
         if (!record || !cc.isValid(record.node)) {
             return;
         }
@@ -377,10 +381,10 @@ export default class HrzPageCurl extends cc.Component {
                 childState.node.active = childState.active;
             }
         }
-        if (record.addedSprite) {
+        if (record.addedSprite && record.sprite) {
             record.node.removeComponent(record.sprite);
         } else if (record.sprite) {
-            record.sprite.spriteFrame = record.originalFrame;
+            record.sprite.spriteFrame = record.originalFrame!;
             record.sprite.type = record.originalType;
             record.sprite.sizeMode = record.originalSizeMode;
         }
