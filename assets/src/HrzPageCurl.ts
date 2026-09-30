@@ -174,7 +174,12 @@ export default class HrzPageCurl extends cc.Component {
                 throw new Error('正面节点截图失败');
             }
             frontRecord.capturedFrame = frontFrame;
-            backRecord.capturedFrame = HrzNodeUtils.captureNodeToSpriteFrameImmediate(backSource, CAPTURE_SCALE);
+            backSource.active = true;
+            try {
+                backRecord.capturedFrame = HrzNodeUtils.captureNodeToSpriteFrameImmediate(backSource, CAPTURE_SCALE);
+            } finally {
+                backSource.active = sources.backActive;
+            }
             if (!backRecord.capturedFrame) {
                 throw new Error('背面节点截图失败');
             }

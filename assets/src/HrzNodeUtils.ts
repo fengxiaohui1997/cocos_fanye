@@ -52,16 +52,22 @@ export namespace HrzNodeUtils {
     }
 
     export function captureNodeToSpriteFrameImmediate(targetNode: cc.Node, textureScale?: number): cc.SpriteFrame | null {
+        if (!targetNode || !cc.isValid(targetNode) || !targetNode.activeInHierarchy) {
+            console.warn('[HrzNodeUtils]', 'captureNodeToSpriteFrameImmediate targetNode 无效或未激活');
+            return null;
+        }
+
         const captureNode: cc.Node = new cc.Node('hrz_node_screenshot_capture');
-        captureNode.parent = cc.director.getScene();
+        const scene: cc.Scene = cc.director.getScene();
+        captureNode.parent = scene || targetNode;
+
         const capture: HrzNodeScreenshotCapture = captureNode.addComponent(HrzNodeScreenshotCapture);
-        const wasActive: boolean = targetNode.active;
         try {
-            targetNode.active = true;
             return capture.captureNodeToSpriteFrameNow(targetNode, textureScale);
         } finally {
-            targetNode.active = wasActive;
-            captureNode.destroy();
+            if (cc.isValid(captureNode)) {
+                captureNode.destroy();
+            }
         }
     }
 
